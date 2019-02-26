@@ -1,4 +1,4 @@
-# F5 Azure High-Availibity & Failover Designs
+# F5 Azure High Availibility & Failover Designs
 
 ### Design 1: Native LB-attached Virtual Servers
 ![enter image description here](https://github.com/fadlytabrani/f5-azure-ha-fo/raw/master/architecture-diagrams/f5-azure-ha-fo-lb-vs.png)
