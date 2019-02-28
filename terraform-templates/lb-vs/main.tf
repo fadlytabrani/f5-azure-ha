@@ -7,37 +7,39 @@ provider "azurerm" {
 
 resource "azurerm_resource_group" "rg" {
   location = "Australia East"
-  name     = "${var.objectname_prefix}-rg-0"
+  name     = "${var.objectname_prefix}-rg-1"
 }
 
 # Vnet and subnet configuration <
 resource "azurerm_virtual_network" "vnet" {
   address_space       = ["10.4.0.0/16"]
   location            = "${azurerm_resource_group.rg.location}"
-  name                = "${var.objectname_prefix}-vnet-0"
+  name                = "${var.objectname_prefix}-vnet-1"
   resource_group_name = "${azurerm_resource_group.rg.name}"
 }
 
+resource "azurerm_subnet" "subnets" {
+  # We'll have a subnet per interface.
+  count                = "${length(var.interfaces)}"
+  address_prefix       = "${element(var.interface_subnets, count.index)}"
+  name                 = "${element(var.interfaces, count.index)}"
+  resource_group_name  = "${azurerm_resource_group.rg.name}"
+  virtual_network_name = "${azurerm_virtual_network.vnet.name}"
+}
+
+# Vnet and subnet configuration >
+
+# NSG configuration <
+
+# Create "general" nsg a minimal ruleset for the solution.
 resource "azurerm_network_security_group" "nsg" {
   location            = "${azurerm_resource_group.rg.location}"
-  name                = "${var.objectname_prefix}-nsg-0"
+  name                = "${var.objectname_prefix}-nsg-1"
   resource_group_name = "${azurerm_resource_group.rg.name}"
 
   security_rule {
-    name                       = "allow_in_tcp443"
+    name                       = "allow_in_tcp22_SSH"
     priority                   = 100
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "443"
-    source_address_prefix      = "*"
-    destination_address_prefix = "*"
-  }
-
-  security_rule {
-    name                       = "allow_in_tcp22"
-    priority                   = 101
     direction                  = "Inbound"
     access                     = "Allow"
     protocol                   = "Tcp"
@@ -46,70 +48,79 @@ resource "azurerm_network_security_group" "nsg" {
     source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
-}
 
-resource "azurerm_subnet" "sn_mgmt" {
-  address_prefix       = "10.4.0.0/24"
-  name                 = "${var.objectname_prefix}-subnet-0"
-  resource_group_name  = "${azurerm_resource_group.rg.name}"
-  virtual_network_name = "${azurerm_virtual_network.vnet.name}"
-}
+  security_rule {
+    name                       = "allow_in_tcp80_HTTP"
+    priority                   = 101
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "80"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
 
-resource "azurerm_subnet" "sn_sync" {
-  address_prefix       = "10.4.1.0/24"
-  name                 = "${var.objectname_prefix}-subnet-1"
-  resource_group_name  = "${azurerm_resource_group.rg.name}"
-  virtual_network_name = "${azurerm_virtual_network.vnet.name}"
+  security_rule {
+    name                       = "allow_in_tcp443_HTTPS"
+    priority                   = 102
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "443"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
 }
-
-resource "azurerm_subnet" "sn_ext" {
-  address_prefix       = "10.4.2.0/24"
-  name                 = "${var.objectname_prefix}-subnet-2"
-  resource_group_name  = "${azurerm_resource_group.rg.name}"
-  virtual_network_name = "${azurerm_virtual_network.vnet.name}"
-}
-# Vnet and subnet configuration >
-
-# NSG configuration <
-resource "azurerm_subnet_network_security_group_association" "nsga-mgmt" {
-  subnet_id                 = "${azurerm_subnet.sn_mgmt.id}"
-  network_security_group_id = "${azurerm_network_security_group.nsg.id}"
-}
-
-resource "azurerm_subnet_network_security_group_association" "nsga-ext" {
-  subnet_id                 = "${azurerm_subnet.sn_ext.id}"
+resource "azurerm_subnet_network_security_group_association" "nsg_associations" {
+  count                     = "${length(var.interfaces)}"
+  subnet_id                 = "${element(azurerm_subnet.subnets.*.id, count.index)}"
   network_security_group_id = "${azurerm_network_security_group.nsg.id}"
 }
 # NSG configuration >
 
 # Public IP configuration <
-resource "azurerm_public_ip" "f5-0-mgmt-pip" {
-  location            = "${azurerm_resource_group.rg.location}"
-  name                = "${var.objectname_prefix}-pip-0"
-  resource_group_name = "${azurerm_resource_group.rg.name}"
-  allocation_method   = "Static"
-  sku                 = "Standard"
+locals {
+  public_ip_names = [
+    "f51-management",
+    "f52-management",
+    "virtualServerExample",
+  ]
 }
-
-resource "azurerm_public_ip" "f5-1-mgmt-pip" {
-  location            = "${azurerm_resource_group.rg.location}"
-  name                = "${var.objectname_prefix}-pip-1"
-  resource_group_name = "${azurerm_resource_group.rg.name}"
+resource "azurerm_public_ip" "public_ips" {
+  count               = 3
   allocation_method   = "Static"
-  sku                 = "Standard"
-}
-
-resource "azurerm_public_ip" "plb-pip" {
   location            = "${azurerm_resource_group.rg.location}"
-  name                = "${var.objectname_prefix}-pip-2"
+  name                = "${var.objectname_prefix}-pip-${count.index}"
   resource_group_name = "${azurerm_resource_group.rg.name}"
-  allocation_method   = "Static"
   sku                 = "Standard"
-}
 
+  tags = {
+    "description" = "${element(local.public_ip_names, count.index)}"
+  }
+}
 # Public IP configuration >
 
 # Network interface configuration <
+locals {
+  public_ip_address_ids = "${concat(slice(azurerm_public_ip.public_ips.*.id, 0, 1), list("","","",""))}"
+}
+resource "azurerm_network_interface" "network_interfaces" {
+  count               = "${length(var.interfaces) * 2}"
+  location            = "${azurerm_resource_group.rg.location}"
+  name                = "${var.objectname_prefix}-ni-${count.index}"
+  resource_group_name = "${azurerm_resource_group.rg.name}"
+
+  ip_configuration {
+    name = "${element(azurerm_subnet.subnets.*.name, count.index)}"
+    private_ip_address =  "${cidrhost(element(azurerm_subnet.subnets.*.address_prefix, count.index), element(list("10", "11"), count.index))}"
+    private_ip_address_allocation = "Static"
+    subnet_id = "${element(azurerm_subnet.subnets.*.id, count.index)}"
+    #public_ip_address_id = "${element(local.public_ip_address_ids, count.index)}"
+  }
+}
+/*
 resource "azurerm_network_interface" "f5-0-mgmt" {
   name                = "${var.objectname_prefix}-ni-0"
   location            = "${azurerm_resource_group.rg.location}"
@@ -349,3 +360,5 @@ resource "azurerm_virtual_machine" "vm-f5-0" {
   }
 }
 # Availability set and virtual machine configuration >
+*/
+
