@@ -17,9 +17,16 @@
 # You must provide a value for each of these parameters.
 # ---------------------------------------------------------------------------------------------------------------------
 variable "AZ_SUBSCRIPTION_ID" {}
+
 variable "AZ_TENANT_ID" {}
-variable "F5_USERNAME" {}
-variable "F5_PASSWORD" {}
+
+variable "F5_USERNAME" {
+  default = "f5admin"
+}
+
+variable "F5_PASSWORD" {
+  default = "changethis1!"
+}
 
 variable "objectname_prefix" {
   default = "f5ha"
@@ -31,4 +38,20 @@ variable "vm_size" {
 
 variable "f5_version" {
   default = "14.1.001000"
+}
+
+variable "interfaces" {
+  default = [
+    "managment",
+    "csync_ha_mirror",
+    "external"
+  ]
+}
+
+variable "interface_subnets" {
+  default = [
+      "10.4.0.0/24",
+      "10.4.1.0/24",
+      "10.4.2.0/24"
+  ]
 }
