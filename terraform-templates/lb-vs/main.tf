@@ -7,14 +7,14 @@ provider "azurerm" {
 
 resource "azurerm_resource_group" "rg" {
   location = "Australia East"
-  name     = "${var.objectname_prefix}-rg-1"
+  name     = "${var.objectname_prefix}-rg-0"
 }
 
 # Vnet and subnet configuration <
 resource "azurerm_virtual_network" "vnet" {
   address_space       = ["10.4.0.0/16"]
   location            = "${azurerm_resource_group.rg.location}"
-  name                = "${var.objectname_prefix}-vnet-1"
+  name                = "${var.objectname_prefix}-vnet-0"
   resource_group_name = "${azurerm_resource_group.rg.name}"
 }
 
@@ -34,11 +34,11 @@ resource "azurerm_subnet" "subnets" {
 # Create "general" nsg a minimal ruleset for the solution.
 resource "azurerm_network_security_group" "nsg" {
   location            = "${azurerm_resource_group.rg.location}"
-  name                = "${var.objectname_prefix}-nsg-1"
+  name                = "${var.objectname_prefix}-nsg-0"
   resource_group_name = "${azurerm_resource_group.rg.name}"
 
   security_rule {
-    name                       = "allow_in_tcp22_SSH"
+    name                       = "ssh"
     priority                   = 100
     direction                  = "Inbound"
     access                     = "Allow"
@@ -50,7 +50,7 @@ resource "azurerm_network_security_group" "nsg" {
   }
 
   security_rule {
-    name                       = "allow_in_tcp80_HTTP"
+    name                       = "http"
     priority                   = 101
     direction                  = "Inbound"
     access                     = "Allow"
@@ -62,7 +62,7 @@ resource "azurerm_network_security_group" "nsg" {
   }
 
   security_rule {
-    name                       = "allow_in_tcp443_HTTPS"
+    name                       = "https"
     priority                   = 102
     direction                  = "Inbound"
     access                     = "Allow"
@@ -73,11 +73,13 @@ resource "azurerm_network_security_group" "nsg" {
     destination_address_prefix = "*"
   }
 }
+
 resource "azurerm_subnet_network_security_group_association" "nsg_associations" {
   count                     = "${length(var.interfaces)}"
   subnet_id                 = "${element(azurerm_subnet.subnets.*.id, count.index)}"
   network_security_group_id = "${azurerm_network_security_group.nsg.id}"
 }
+
 # NSG configuration >
 
 # Public IP configuration <
@@ -88,6 +90,7 @@ locals {
     "virtualServerExample",
   ]
 }
+
 resource "azurerm_public_ip" "public_ips" {
   count               = 3
   allocation_method   = "Static"
@@ -100,12 +103,31 @@ resource "azurerm_public_ip" "public_ips" {
     "description" = "${element(local.public_ip_names, count.index)}"
   }
 }
+
 # Public IP configuration >
 
 # Network interface configuration <
 locals {
-  public_ip_address_ids = "${concat(slice(azurerm_public_ip.public_ips.*.id, 0, 1), list("","","",""))}"
+  num_network_interfaces           = "${length(var.interfaces)}"
+  management_public_ip_address_ids = "${slice(azurerm_public_ip.public_ips.*.id, 0, 2)}"
+  static_ip_suffixes               = "${concat(slice(list("10", "10", "10"), 0, local.num_network_interfaces), slice(list("11", "11", "11"), 0, local.num_network_interfaces))}"
 }
+
+# resource "azurerm_network_interface" "management_network_interfaces" {
+#   count               = 2
+#   location            = "${azurerm_resource_group.rg.location}"
+#   name                = "${var.objectname_prefix}-ni-${count.index}"
+#   resource_group_name = "${azurerm_resource_group.rg.name}"
+
+#   ip_configuration {
+#     name = "management"
+#     private_ip_address =  "${cidrhost(azurerm_subnet.subnets.0.address_prefix, element(list("10", "11"), count.index))}"
+#     private_ip_address_allocation = "Static"
+#     subnet_id = "${azurerm_subnet.subnets.0.id}"
+#     public_ip_address_id = "${element(local.management_public_ip_address_ids, count.index)}"
+#   }
+# }
+
 resource "azurerm_network_interface" "network_interfaces" {
   count               = "${length(var.interfaces) * 2}"
   location            = "${azurerm_resource_group.rg.location}"
@@ -113,91 +135,11 @@ resource "azurerm_network_interface" "network_interfaces" {
   resource_group_name = "${azurerm_resource_group.rg.name}"
 
   ip_configuration {
-    name = "${element(azurerm_subnet.subnets.*.name, count.index)}"
-    private_ip_address =  "${cidrhost(element(azurerm_subnet.subnets.*.address_prefix, count.index), element(list("10", "11"), count.index))}"
+    name                          = "${element(azurerm_subnet.subnets.*.name, count.index)}"
+    private_ip_address            = "${cidrhost(element(azurerm_subnet.subnets.*.address_prefix, count.index), element(local.static_ip_suffixes, count.index))}"
     private_ip_address_allocation = "Static"
-    subnet_id = "${element(azurerm_subnet.subnets.*.id, count.index)}"
-    #public_ip_address_id = "${element(local.public_ip_address_ids, count.index)}"
-  }
-}
-/*
-resource "azurerm_network_interface" "f5-0-mgmt" {
-  name                = "${var.objectname_prefix}-ni-0"
-  location            = "${azurerm_resource_group.rg.location}"
-  resource_group_name = "${azurerm_resource_group.rg.name}"
-
-  ip_configuration {
-    name                          = "mgmt_ip"
-    subnet_id                     = "${azurerm_subnet.sn_mgmt.id}"
-    private_ip_address_allocation = "static"
-    private_ip_address            = "${cidrhost(azurerm_subnet.sn_mgmt.address_prefix, 10)}"
-    public_ip_address_id          = "${azurerm_public_ip.f5-0-mgmt-pip.id}"
-  }
-}
-
-resource "azurerm_network_interface" "f5-0-sync" {
-  name                = "${var.objectname_prefix}-ni-1"
-  location            = "${azurerm_resource_group.rg.location}"
-  resource_group_name = "${azurerm_resource_group.rg.name}"
-
-  ip_configuration {
-    name                          = "self_ip"
-    subnet_id                     = "${azurerm_subnet.sn_sync.id}"
-    private_ip_address_allocation = "static"
-    private_ip_address            = "${cidrhost(azurerm_subnet.sn_sync.address_prefix, 10)}"
-  }
-}
-
-resource "azurerm_network_interface" "f5-0-ext" {
-  name                = "${var.objectname_prefix}-ni-2"
-  location            = "${azurerm_resource_group.rg.location}"
-  resource_group_name = "${azurerm_resource_group.rg.name}"
-
-  ip_configuration {
-    name                          = "self_ip"
-    subnet_id                     = "${azurerm_subnet.sn_ext.id}"
-    private_ip_address_allocation = "static"
-    private_ip_address            = "${cidrhost(azurerm_subnet.sn_ext.address_prefix, 10)}"
-  }
-}
-
-resource "azurerm_network_interface" "f5-1-mgmt" {
-  name                = "${var.objectname_prefix}-ni-3"
-  location            = "${azurerm_resource_group.rg.location}"
-  resource_group_name = "${azurerm_resource_group.rg.name}"
-
-  ip_configuration {
-    name                          = "mgmt_ip"
-    subnet_id                     = "${azurerm_subnet.sn_mgmt.id}"
-    private_ip_address_allocation = "static"
-    private_ip_address            = "${cidrhost(azurerm_subnet.sn_mgmt.address_prefix, 11)}"
-    public_ip_address_id          = "${azurerm_public_ip.f5-1-mgmt-pip.id}"
-  }
-}
-
-resource "azurerm_network_interface" "f5-1-sync" {
-  name                = "${var.objectname_prefix}-ni-4"
-  location            = "${azurerm_resource_group.rg.location}"
-  resource_group_name = "${azurerm_resource_group.rg.name}"
-
-  ip_configuration {
-    name                          = "self_ip"
-    subnet_id                     = "${azurerm_subnet.sn_sync.id}"
-    private_ip_address_allocation = "static"
-    private_ip_address            = "${cidrhost(azurerm_subnet.sn_sync.address_prefix, 11)}"
-  }
-}
-
-resource "azurerm_network_interface" "f5-1-ext" {
-  name                = "${var.objectname_prefix}-ni-5"
-  location            = "${azurerm_resource_group.rg.location}"
-  resource_group_name = "${azurerm_resource_group.rg.name}"
-
-  ip_configuration {
-    name                          = "self_ip"
-    subnet_id                     = "${azurerm_subnet.sn_ext.id}"
-    private_ip_address_allocation = "static"
-    private_ip_address            = "${cidrhost(azurerm_subnet.sn_ext.address_prefix, 11)}"
+    subnet_id                     = "${element(azurerm_subnet.subnets.*.id, count.index)}"
+    public_ip_address_id          = "${element(concat(local.management_public_ip_address_ids, list("", "", "","")), count.index)}"
   }
 }
 
@@ -211,45 +153,40 @@ resource "azurerm_lb" "plb" {
   sku                 = "Standard"
 
   frontend_ip_configuration {
-    name                 = "public-vs-0"
-    public_ip_address_id = "${azurerm_public_ip.plb-pip.id}"
+    name                 = "feic-0"
+    public_ip_address_id = "${azurerm_public_ip.public_ips.2.id}"
   }
 }
 
 resource "azurerm_lb_backend_address_pool" "plb-bep" {
   resource_group_name = "${azurerm_resource_group.rg.name}"
   loadbalancer_id     = "${azurerm_lb.plb.id}"
-  name                = "self_ips"
+  name                = "bep-0"
 }
 
 resource "azurerm_lb_probe" "plb-probe" {
   resource_group_name = "${azurerm_resource_group.rg.name}"
   loadbalancer_id     = "${azurerm_lb.plb.id}"
-  name                = "tcp22"
+  name                = "tcp694"
   interval_in_seconds = 5
-  port                = 22
+  port                = 694
 }
 
-resource "azurerm_network_interface_backend_address_pool_association" "plb-f5-0" {
-  network_interface_id    = "${azurerm_network_interface.f5-0-ext.id}"
-  ip_configuration_name   = "self_ip"
-  backend_address_pool_id = "${azurerm_lb_backend_address_pool.plb-bep.id}"
-}
-
-resource "azurerm_network_interface_backend_address_pool_association" "plb-f5-1" {
-  network_interface_id    = "${azurerm_network_interface.f5-1-ext.id}"
-  ip_configuration_name   = "self_ip"
+resource "azurerm_network_interface_backend_address_pool_association" "plb-beps" {
+  count                   = 2
+  network_interface_id    = "${element(azurerm_network_interface.network_interfaces.*.id, ((count.index + 1) * local.num_network_interfaces - 1))}"
+  ip_configuration_name   = "external"
   backend_address_pool_id = "${azurerm_lb_backend_address_pool.plb-bep.id}"
 }
 
 resource "azurerm_lb_rule" "plb-rule" {
   resource_group_name = "${azurerm_resource_group.rg.name}"
   loadbalancer_id                = "${azurerm_lb.plb.id}"
-  name                           = "lb-rule_selfips"
+  name                           = "lbr-0"
   protocol                       = "Tcp"
   frontend_port                  = 80
   backend_port                   = 80
-  frontend_ip_configuration_name = "public-vs-0"
+  frontend_ip_configuration_name = "${azurerm_lb.plb.frontend_ip_configuration.0.name}"
   backend_address_pool_id = "${azurerm_lb_backend_address_pool.plb-bep.id}"
   probe_id = "${azurerm_lb_probe.plb-probe.id}"
   enable_floating_ip = true
@@ -264,8 +201,9 @@ resource "azurerm_lb" "ilb" {
   sku                 = "Standard"
 
   frontend_ip_configuration {
-    name                          = "floating_selfip"
+    name                          = "feic-0"
     subnet_id                     = "${azurerm_subnet.sn_ext.id}"
+    subnet_id                     = "${azurerm_subnet.subnets.2.id}"
     private_ip_address            = "10.4.2.9"
     private_ip_address_allocation = "Static"
   }
@@ -274,43 +212,39 @@ resource "azurerm_lb" "ilb" {
 resource "azurerm_lb_backend_address_pool" "ilb-bep" {
   resource_group_name = "${azurerm_resource_group.rg.name}"
   loadbalancer_id     = "${azurerm_lb.ilb.id}"
-  name                = "self_ips"
+  name                = "bep-0"
 }
 
 resource "azurerm_lb_probe" "ilb-probe" {
   resource_group_name = "${azurerm_resource_group.rg.name}"
   loadbalancer_id     = "${azurerm_lb.ilb.id}"
-  name                = "tcp22"
+  name                = "tcp964"
   interval_in_seconds = 5
-  port                = 22
+  port                = 964
 }
 
-resource "azurerm_network_interface_backend_address_pool_association" "ilb-f5-0" {
-  network_interface_id    = "${azurerm_network_interface.f5-0-ext.id}"
-  ip_configuration_name   = "self_ip"
-  backend_address_pool_id = "${azurerm_lb_backend_address_pool.ilb-bep.id}"
-}
-
-resource "azurerm_network_interface_backend_address_pool_association" "ilb-f5-1" {
-  network_interface_id    = "${azurerm_network_interface.f5-1-ext.id}"
-  ip_configuration_name   = "self_ip"
+resource "azurerm_network_interface_backend_address_pool_association" "ilb-beps" {
+  count                   = 2
+  network_interface_id    = "${element(azurerm_network_interface.network_interfaces.*.id, ((count.index + 1) * local.num_network_interfaces - 1))}"
+  ip_configuration_name   = "external"
   backend_address_pool_id = "${azurerm_lb_backend_address_pool.ilb-bep.id}"
 }
 
 resource "azurerm_lb_rule" "ilb-rule" {
   resource_group_name = "${azurerm_resource_group.rg.name}"
   loadbalancer_id                = "${azurerm_lb.ilb.id}"
-  name                           = "lb-rule_selfips"
+  name                           = "lbr-0"
   protocol                       = "All"
   frontend_port                  = 0
   backend_port                   = 0
-  frontend_ip_configuration_name = "floating_selfip"
+  frontend_ip_configuration_name = "${azurerm_lb.ilb.frontend_ip_configuration.0.name}"
   backend_address_pool_id = "${azurerm_lb_backend_address_pool.ilb-bep.id}"
   probe_id = "${azurerm_lb_probe.ilb-probe.id}"
   enable_floating_ip = true
 }
 # Internal load balancer configuration >
 
+/*
 # Availability set and virtual machine configuration <
 resource "azurerm_availability_set" "as" {
   name                        = "${var.objectname_prefix}-as-1"
