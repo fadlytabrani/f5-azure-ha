@@ -244,15 +244,15 @@ resource "azurerm_lb_rule" "ilb-rule" {
 }
 # Internal load balancer configuration >
 
-/*
 # Availability set and virtual machine configuration <
 resource "azurerm_availability_set" "as" {
-  name                        = "${var.objectname_prefix}-as-1"
+  name                        = "${var.objectname_prefix}-as-0"
   managed                     = true
   location                    = "${azurerm_resource_group.rg.location}"
   resource_group_name         = "${azurerm_resource_group.rg.name}"
   platform_fault_domain_count = 2
 }
+/*
 resource "azurerm_virtual_machine" "vm-f5-0" {
   availability_set_id = "${azurerm_availability_set.as.id}"
   location                     = "${azurerm_resource_group.rg.location}"
