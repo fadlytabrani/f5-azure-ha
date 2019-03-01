@@ -16,9 +16,13 @@
 # REQUIRED PARAMETERS
 # You must provide a value for each of these parameters.
 # ---------------------------------------------------------------------------------------------------------------------
-variable "AZ_SUBSCRIPTION_ID" {}
+variable "AZ_SUBSCRIPTION_ID" {
+  default = 1
+}
 
-variable "AZ_TENANT_ID" {}
+variable "AZ_TENANT_ID" {
+  default = 1
+}
 
 variable "F5_USERNAME" {
   default = "f5admin"
@@ -42,16 +46,16 @@ variable "f5_version" {
 
 variable "interfaces" {
   default = [
-    "managment",
+    "management",
     "csync_ha_mirror",
-    "external"
+    "external",
   ]
 }
 
 variable "interface_subnets" {
   default = [
-      "10.4.0.0/24",
-      "10.4.1.0/24",
-      "10.4.2.0/24"
+    "10.4.0.0/24",
+    "10.4.1.0/24",
+    "10.4.2.0/24",
   ]
 }
