@@ -154,7 +154,7 @@ resource "azurerm_lb" "plb" {
 
   frontend_ip_configuration {
     name                 = "feic-0"
-    public_ip_address_id = "${azurerm_public_ip.public_ips.2.id}"
+    public_ip_address_id = "${azurerm_public_ip.public_ips.*.id[2]}"
   }
 }
 
@@ -202,8 +202,7 @@ resource "azurerm_lb" "ilb" {
 
   frontend_ip_configuration {
     name                          = "feic-0"
-    subnet_id                     = "${azurerm_subnet.sn_ext.id}"
-    subnet_id                     = "${azurerm_subnet.subnets.2.id}"
+    subnet_id                     = "${azurerm_subnet.subnets.*.id[2]}"
     private_ip_address            = "10.4.2.9"
     private_ip_address_allocation = "Static"
   }
@@ -252,6 +251,51 @@ resource "azurerm_availability_set" "as" {
   resource_group_name         = "${azurerm_resource_group.rg.name}"
   platform_fault_domain_count = 2
 }
+
+
+
+resource "azurerm_virtual_machine" "vms" {
+  count = 2
+  availability_set_id = "${azurerm_availability_set.as.id}"
+  location                     = "${azurerm_resource_group.rg.location}"
+  name                         = "${var.objectname_prefix}-vm-${count.index}"
+  network_interface_ids        = ["${slice(azurerm_network_interface.network_interfaces.*.id, count.index * local.num_network_interfaces, (count.index + 1) * local.num_network_interfaces)}"]
+  primary_network_interface_id = "${element(slice(azurerm_network_interface.network_interfaces.*.id, count.index * local.num_network_interfaces, (count.index + 1) * local.num_network_interfaces), 1)}"
+  resource_group_name          = "${azurerm_resource_group.rg.name}"
+  vm_size                      = "${var.vm_size}"
+
+  plan {
+    name      = "f5-big-all-2slot-byol"
+    publisher = "f5-networks"
+    product   = "f5-big-ip-byol"
+  }
+
+  storage_image_reference {
+    offer     = "f5-big-ip-byol"
+    publisher = "f5-networks"
+    sku       = "f5-big-all-2slot-byol"
+    version   = "${var.f5_version}"
+  }
+
+  storage_os_disk {
+    name              = "${var.objectname_prefix}-vm-${count.index}-disk-0"
+    caching           = "ReadWrite"
+    create_option     = "FromImage"
+    managed_disk_type = "Premium_LRS"
+    disk_size_gb      = "120"
+  }
+
+  os_profile {
+    computer_name  = "${var.objectname_prefix}-vm-${count.index}"
+    admin_username = "${var.F5_USERNAME}"
+    admin_password = "${var.F5_PASSWORD}"
+  }
+
+  os_profile_linux_config {
+    disable_password_authentication = false
+  }
+}
+
 /*
 resource "azurerm_virtual_machine" "vm-f5-0" {
   availability_set_id = "${azurerm_availability_set.as.id}"
@@ -293,6 +337,7 @@ resource "azurerm_virtual_machine" "vm-f5-0" {
     disable_password_authentication = false
   }
 }
+
 # Availability set and virtual machine configuration >
 */
 
