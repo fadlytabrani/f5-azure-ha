@@ -376,13 +376,13 @@
 			<text x="7.01" y="377.43" class="st20" v:langID="3081"><v:paragraph v:horizAlign="2"/><v:tabList/>.10</text>		</g>
 		<g id="shape2037-109" v:mID="2037" v:groupContext="shape" transform="translate(28.4665,-254.442)">
 			<title>Sheet.2037</title>
-			<desc>PUBLIC FIP: 1.X.X.X BEP: 10.4.2.10, 10.4.2.11 HP: TCP22 (SSH)...</desc>
+			<desc>PUBLIC FIP: 1.X.X.X BEP: 10.4.2.10, 10.4.2.11 HP: TCP694 DSR:...</desc>
 			<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
 			<v:textRect cx="46.063" cy="360.862" width="92.13" height="42.5197"/>
 			<rect x="0" y="339.602" width="92.126" height="42.5197" class="st19"/>
 			<text x="4" y="348.86" class="st21" v:langID="3081"><v:paragraph/><v:tabList/>PUBLIC FIP: 1.X.X.X<v:newlineChar/><tspan
 						x="4" dy="1.2em" class="st22">BEP: 10.4.2.10, 10.4.2.11<v:newlineChar/></tspan><tspan x="4" dy="1.2em"
-						class="st22">HP: TCP22 (SSH)<v:newlineChar/></tspan><tspan x="4" dy="1.2em" class="st22">DSR: ENABLED</tspan></text>		</g>
+						class="st22">HP: TCP694<v:newlineChar/></tspan><tspan x="4" dy="1.2em" class="st22">DSR: ENABLED</tspan></text>		</g>
 		<g id="group2038-115" transform="translate(113.506,-261.529)" v:mID="2038" v:groupContext="group" v:layerMember="1">
 			<title>Azure Load Balancer.2002</title>
 			<g id="group2039-116" transform="translate(0.490612,-0.436099)" v:mID="2039" v:groupContext="group" v:layerMember="1">
@@ -716,12 +716,12 @@
 		</g>
 		<g id="shape2093-261" v:mID="2093" v:groupContext="shape" transform="translate(226.892,-219.009)">
 			<title>Sheet.2093</title>
-			<desc>0.0.0.0/0 10.4.2.1</desc>
+			<desc>0.0.0.0/0 &#62; 10.4.2.1</desc>
 			<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
 			<v:textRect cx="21.2598" cy="375.035" width="42.52" height="14.1732"/>
 			<rect x="0" y="367.948" width="42.5197" height="14.1732" class="st19"/>
-			<text x="6.2" y="372.64" class="st33" v:langID="3081"><v:paragraph v:horizAlign="1"/><v:tabList/>0.0.0.0/0 <tspan
-						x="7.92" dy="1.2em" class="st18">10.4.2.1</tspan></text>		</g>
+			<text x="6.2" y="372.64" class="st33" v:langID="3081"><v:paragraph v:horizAlign="1"/><v:tabList/>0.0.0.0/0<v:newlineChar/><tspan
+						x="5.02" dy="1.2em" class="st18">&#62; 10.4.2.1</tspan></text>		</g>
 		<g id="group2071-265" transform="translate(396.97,-261.529)" v:mID="2071" v:groupContext="group">
 			<title>Sheet.2071</title>
 			<g id="shape2072-266" v:mID="2072" v:groupContext="shape">
@@ -898,13 +898,13 @@
 						x="5.58" dy="1.2em" class="st18">NETWORKS</tspan></text>		</g>
 		<g id="shape2134-326" v:mID="2134" v:groupContext="shape" transform="translate(28.4665,-98.5369)">
 			<title>Sheet.2134</title>
-			<desc>PRIVATE FIP: 10.X.X.X BEP: 10.4.2.10, 10.4.2.11 HP: TCP22 (SS...</desc>
+			<desc>PRIVATE FIP: 10.X.X.X BEP: 10.4.2.10, 10.4.2.11 HP: TCP694 DS...</desc>
 			<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
 			<v:textRect cx="46.063" cy="360.862" width="92.13" height="42.5197"/>
 			<rect x="0" y="339.602" width="92.126" height="42.5197" class="st19"/>
 			<text x="4" y="348.86" class="st36" v:langID="3081"><v:paragraph/><v:tabList/>PRIVATE FIP: 10.X.X.X<v:newlineChar/><tspan
 						x="4" dy="1.2em" class="st22">BEP: 10.4.2.10, 10.4.2.11<v:newlineChar/></tspan><tspan x="4" dy="1.2em"
-						class="st22">HP: TCP22 (SSH)<v:newlineChar/></tspan><tspan x="4" dy="1.2em" class="st22">DSR: ENABLED</tspan></text>		</g>
+						class="st22">HP: TCP694<v:newlineChar/></tspan><tspan x="4" dy="1.2em" class="st22">DSR: ENABLED</tspan></text>		</g>
 		<g id="shape2135-332" v:mID="2135" v:groupContext="shape" transform="translate(396.97,637.36) rotate(180)">
 			<title>Sheet.2135</title>
 			<path d="M0 382.12 L14.17 382.12" class="st37"/>
