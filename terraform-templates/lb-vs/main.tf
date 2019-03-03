@@ -7,7 +7,7 @@ provider "azurerm" {
 
 resource "azurerm_resource_group" "rg" {
   location = "Australia East"
-  name     = "${var.objectname_prefix}-rg-1"
+  name     = "${var.objectname_prefix}-rg-0"
 }
 
 # Vnet and subnet configuration <
@@ -261,7 +261,7 @@ resource "azurerm_virtual_machine" "vms" {
 
 resource "azurerm_virtual_machine_extension" "vm_exts" {
   count = 2
-  name                 = "Failover Event Script"
+  name                 = "f5bigip_failover_event_script"
   location             = "${azurerm_resource_group.rg.location}"
   resource_group_name  = "${azurerm_resource_group.rg.name}"
   virtual_machine_name = "${element(azurerm_virtual_machine.vms.*.name, count.index)}"
