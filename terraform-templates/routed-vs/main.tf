@@ -276,7 +276,3 @@ resource "azurerm_virtual_machine_extension" "vm_exts" {
   SETTINGS
 }
 # Availability set and virtual machine configuration >
-
-# F5 BIG-IP base configuration <
-# TODO: Use terraform big-ip provider.
-# F5 BIG-IP base configuration >
