@@ -288,7 +288,7 @@ resource "azurerm_virtual_machine" "vms" {
 
 resource "azurerm_virtual_machine_extension" "vm_exts" {
   count = 2
-  name                 = "f5bigip_failover_event_script"
+  name                 = "f5bigip_1nic_ha_fo_bootstrap"
   location             = "${azurerm_resource_group.rg.location}"
   resource_group_name  = "${azurerm_resource_group.rg.name}"
   virtual_machine_name = "${element(azurerm_virtual_machine.vms.*.name, count.index)}"
@@ -298,7 +298,7 @@ resource "azurerm_virtual_machine_extension" "vm_exts" {
 
   settings = <<SETTINGS
     {
-        "commandToExecute": "echo tmsh modify ltm virtual _cloud_lb_probe_listener_ enabled>>/config/failover/active;echo tmsh modify ltm virtual _cloud_lb_probe_listener_ disabled>>/config/failover/standby"
+        "commandToExecute": "tmsh modify sys db provision.1nic value forced_enable;tmsh modify sys db provision.1nicautoconfig value disable;echo tmsh modify ltm virtual _cloud_lb_probe_listener_ enabled>>/config/failover/active;echo tmsh modify ltm virtual _cloud_lb_probe_listener_ disabled>>/config/failover/standby;reboot"
     }
   SETTINGS
 }
