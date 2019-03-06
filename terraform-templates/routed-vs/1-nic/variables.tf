@@ -44,8 +44,15 @@ variable "interfaces" {
     "external"
   ]
 }
+
 variable "interface_subnets" {
   default = [
     "10.4.0.0/23"
+  ]
+}
+
+variable "routed_subnets" {
+   default = [
+    "10.4.10.0/24"
   ]
 }
