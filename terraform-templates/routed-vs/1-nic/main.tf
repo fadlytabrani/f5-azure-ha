@@ -6,7 +6,7 @@ provider "azurerm" {
 }
 resource "azurerm_resource_group" "rg" {
   location = "${var.AZ_REGION}"
-  name     = "${var.objectname_prefix}-rg-1"
+  name     = "${var.objectname_prefix}-rg-0"
 }
 
 # Vnet and subnet configuration <
@@ -18,6 +18,7 @@ resource "azurerm_virtual_network" "vnet" {
 }
 
 resource "azurerm_subnet" "subnets" {
+
   # We'll have a subnet per interface.
   count                = "${length(var.interfaces)}"
   address_prefix       = "${element(var.interface_subnets, count.index)}"
@@ -27,16 +28,36 @@ resource "azurerm_subnet" "subnets" {
 }
 # Vnet and subnet configuration >
 
-# NSG configuration <
+# UDR configuration >
 
+# Create the route table and route objects ready for application on subnets if needed.
+resource "azurerm_route_table" "route_tables" {
+  name                = "${var.objectname_prefix}-rt-0"
+  location            = "${azurerm_resource_group.rg.location}"
+  resource_group_name = "${azurerm_resource_group.rg.name}"
+  disable_bgp_route_propagation = true
+}
+
+resource "azurerm_route" "routes" {
+  count = "${length(var.routed_subnets)}"
+  name                = "route-${count.index}"
+  resource_group_name = "${azurerm_resource_group.rg.name}"
+  route_table_name    = "${azurerm_route_table.route_tables.0.name}"
+  address_prefix      = "${element(var.routed_subnets, count.index)}"
+  next_hop_type       = "VirtualAppliance"
+  next_hop_in_ip_address  = "${cidrhost(azurerm_subnet.subnets.0.address_prefix, 9)}"
+  depends_on = ["azurerm_lb.ilb"]
+} 
+# UDR configuration <
+
+# NSG configuration <
 # Create "general" nsg a minimal ruleset for the solution.
 resource "azurerm_network_security_group" "nsg" {
   location            = "${azurerm_resource_group.rg.location}"
   name                = "${var.objectname_prefix}-nsg-0"
   resource_group_name = "${azurerm_resource_group.rg.name}"
 
-
-  # TCP
+# TCP Rules <
   security_rule {
     name                       = "ssh"
     priority                   = 1001
@@ -73,9 +94,36 @@ resource "azurerm_network_security_group" "nsg" {
     destination_address_prefix = "*"
   }
 
+  # F5 BIG-IP mirroring - https://support.f5.com/csp/article/K17333
+  security_rule {
+    name                       = "tcp1029"
+    priority                   = 1004
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "1029"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+
+  # F5 BIG-IP iQuery, CMI - https://support.f5.com/csp/article/K17333
+  security_rule {
+    name                       = "tcp4353"
+    priority                   = 1005
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "4353"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+
+  # F5 configuration utility when in 1-nic configuration. - https://support.f5.com/csp/article/K31003634
   security_rule {
     name                       = "tcp8443"
-    priority                   = 1004
+    priority                   = 1006
     direction                  = "Inbound"
     access                     = "Allow"
     protocol                   = "Tcp"
@@ -84,9 +132,10 @@ resource "azurerm_network_security_group" "nsg" {
     source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
+# TCP Rules >
 
-
-  # UDP
+# UDP Rules <
+  # F5 BIG-IP network failover - https://support.f5.com/csp/article/K9057
   security_rule {
     name                       = "udp1026"
     priority                   = 2001
@@ -99,6 +148,19 @@ resource "azurerm_network_security_group" "nsg" {
     destination_address_prefix = "*"
   }
 
+  # F5 BIG-IP iQuery - https://support.f5.com/csp/article/K17333
+  security_rule {
+    name                       = "udp4353"
+    priority                   = 2002
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Udp"
+    source_port_range          = "*"
+    destination_port_range     = "4353"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+# UDP Rules >
 }
 resource "azurerm_subnet_network_security_group_association" "nsg_associations" {
   count                     = "${length(var.interfaces)}"
@@ -109,7 +171,9 @@ resource "azurerm_subnet_network_security_group_association" "nsg_associations" 
 
 # Public IP configuration <
 resource "azurerm_public_ip" "public_ips" {
-  count               =  "${length(var.interfaces) * 2 + 1}"
+
+  # Create a public IP for each device for direct management and an additional one for the public load balancer frontend.
+  count               =  3
   allocation_method   = "Static"
   location            = "${azurerm_resource_group.rg.location}"
   name                = "${var.objectname_prefix}-pip-${count.index}"
@@ -119,10 +183,6 @@ resource "azurerm_public_ip" "public_ips" {
 # Public IP configuration >
 
 # Network interface configuration <
-locals {
-  num_network_interfaces           = "${length(var.interfaces)}"
-}
-
 resource "azurerm_network_interface" "network_interfaces" {
   count               = "${length(var.interfaces) * 2}"
   location            = "${azurerm_resource_group.rg.location}"
@@ -131,6 +191,8 @@ resource "azurerm_network_interface" "network_interfaces" {
 
   ip_configuration {
     name                          = "${element(azurerm_subnet.subnets.*.name, count.index)}"
+
+
     private_ip_address            = "${cidrhost(element(azurerm_subnet.subnets.*.address_prefix, count.index), element(list("10", "11"), count.index))}"
     private_ip_address_allocation = "Static"
     subnet_id                     = "${element(azurerm_subnet.subnets.*.id, count.index)}"
