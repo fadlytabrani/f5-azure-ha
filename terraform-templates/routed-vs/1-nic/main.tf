@@ -348,7 +348,7 @@ resource "azurerm_virtual_machine" "vms" {
   }
 }
 
-resource "azurerm_virtual_machine_extension" "vm_exts" {
+resource "azurerm_virtual_machine_extension" "vm_exts_bootstrap" {
   count = 2
   name                 = "f5bigip_1nic_ha_fo_bootstrap"
   location             = "${azurerm_resource_group.rg.location}"
@@ -360,7 +360,7 @@ resource "azurerm_virtual_machine_extension" "vm_exts" {
 
   settings = <<SETTINGS
     {
-        "commandToExecute": "tmsh modify sys db provision.1nic value forced_enable;tmsh modify sys db provision.1nicautoconfig value disable;echo tmsh modify ltm virtual _cloud_lb_probe_listener_ enabled>>/config/failover/active;echo tmsh modify ltm virtual _cloud_lb_probe_listener_ disabled>>/config/failover/standby;reboot"
+        "commandToExecute": "tmsh modify sys db provision.1nic value forced_enable;tmsh modify sys db provision.1nicautoconfig value disable;tmsh create ltm virtual _cloud_lb_probe_listener_ destination ${element(azurerm_network_interface.network_interfaces.*.ip_configuration.0.private_ip_address, count.index)}:694 source 168.63.129.16/32 ip-protocol tcp;echo tmsh modify ltm virtual _cloud_lb_probe_listener_ enabled>>/config/failover/active;echo tmsh modify ltm virtual _cloud_lb_probe_listener_ disabled>>/config/failover/standby;bigstart restart"
     }
   SETTINGS
 }
