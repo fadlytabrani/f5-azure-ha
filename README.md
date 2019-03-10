@@ -2,7 +2,7 @@
 
 ## How is this design different?
  1. Much **simpler**, comparable to traditional on-premise setups.
- 2. There is **no** reliance on cloud APIs.
+ 2. There is **no reliance on cloud APIs**.
  3. Fail-over is **quicker**, as fast as native cloud load balancer. 
  4. **No NAT needed** inbound from native cloud Public load balancer.
  5. One IP in the fabric for each interface, **no secondary IP** needed.
