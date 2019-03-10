@@ -347,7 +347,6 @@ resource "azurerm_virtual_machine" "vms" {
     disable_password_authentication = false
   }
 }
-
 resource "azurerm_virtual_machine_extension" "vm_exts_bootstrap" {
   count = 2
   name                 = "f5bigip_1nic_ha_fo_bootstrap"
