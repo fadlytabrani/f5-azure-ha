@@ -7,7 +7,7 @@
  4. **No NAT needed** inbound from native cloud Public load balancer.
  5. One IP in the fabric for each interface, **no secondary IP** needed.
  6. **No single virtual server** listening on a range, multiple virtual servers can be created.
- 7. Supports **manual configuration** from the Azure marketplace, Terraform templates are also provided. 
+ 7. Supports **manual configuration** from the Azure marketplace, example Terraform templates provided. 
  8. Deployed in **Active/Standby or Active/Active scalable up to 127 devices** based on traffic groups.
  9. Same design principles apply in **1-nic, 2-nic, 3-nic, n-nic** deployment.
 
