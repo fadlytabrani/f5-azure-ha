@@ -1,19 +1,19 @@
 # Login to Azure using 'az login' on your shell before running terraform commands. 
 provider "azurerm" {
   version         = "1.22.0"
-  subscription_id = "${var.AZ_SUBSCRIPTION_ID}"
-  tenant_id       = "${var.AZ_TENANT_ID}"
+  subscription_id = "${var.azure_subscription_id}"
+  tenant_id       = "${var.azure_tenant_id}"
 }
 resource "azurerm_resource_group" "rg" {
-  location = "${var.AZ_REGION}"
-  name     = "${var.objectname_prefix}-rg-0"
+  location = "${var.azure_region}"
+  name     = "${var.name_prefix}-rg-1"
 }
 
 # Vnet and subnet configuration <
 resource "azurerm_virtual_network" "vnet" {
   address_space       = "${var.vnet_address_space}"
   location            = "${azurerm_resource_group.rg.location}"
-  name                = "${var.objectname_prefix}-vnet-0"
+  name                = "${var.name_prefix}-vnet-0"
   resource_group_name = "${azurerm_resource_group.rg.name}"
 }
 
@@ -32,7 +32,7 @@ resource "azurerm_subnet" "subnets" {
 
 # Create the route table and route objects ready for application on subnets if needed.
 resource "azurerm_route_table" "route_tables" {
-  name                = "${var.objectname_prefix}-rt-0"
+  name                = "${var.name_prefix}-rt-0"
   location            = "${azurerm_resource_group.rg.location}"
   resource_group_name = "${azurerm_resource_group.rg.name}"
   disable_bgp_route_propagation = true
@@ -54,7 +54,7 @@ resource "azurerm_route" "routes" {
 # Create "general" nsg a minimal ruleset for the solution.
 resource "azurerm_network_security_group" "nsg" {
   location            = "${azurerm_resource_group.rg.location}"
-  name                = "${var.objectname_prefix}-nsg-0"
+  name                = "${var.name_prefix}-nsg-0"
   resource_group_name = "${azurerm_resource_group.rg.name}"
 
 # TCP Rules <
@@ -176,7 +176,7 @@ resource "azurerm_public_ip" "public_ips" {
   count               =  3
   allocation_method   = "Static"
   location            = "${azurerm_resource_group.rg.location}"
-  name                = "${var.objectname_prefix}-pip-${count.index}"
+  name                = "${var.name_prefix}-pip-${count.index}"
   resource_group_name = "${azurerm_resource_group.rg.name}"
   sku                 = "Standard"
 }
@@ -186,7 +186,7 @@ resource "azurerm_public_ip" "public_ips" {
 resource "azurerm_network_interface" "network_interfaces" {
   count               = "${length(var.interfaces) * 2}"
   location            = "${azurerm_resource_group.rg.location}"
-  name                = "${var.objectname_prefix}-ni-${count.index}"
+  name                = "${var.name_prefix}-ni-${count.index}"
   resource_group_name = "${azurerm_resource_group.rg.name}"
 
   ip_configuration {
@@ -204,7 +204,7 @@ resource "azurerm_network_interface" "network_interfaces" {
 # Public load balancer configuration <
 resource "azurerm_lb" "plb" {
   location            = "${azurerm_resource_group.rg.location}"
-  name                = "${var.objectname_prefix}-plb-0"
+  name                = "${var.name_prefix}-plb-0"
   resource_group_name = "${azurerm_resource_group.rg.name}"
   sku                 = "Standard"
 
@@ -252,7 +252,7 @@ resource "azurerm_lb_rule" "plb-rule" {
 # Internal load balancer configuration <
 resource "azurerm_lb" "ilb" {
   location            = "${azurerm_resource_group.rg.location}"
-  name                = "${var.objectname_prefix}-ilb-0"
+  name                = "${var.name_prefix}-ilb-0"
   resource_group_name = "${azurerm_resource_group.rg.name}"
   sku                 = "Standard"
 
@@ -299,7 +299,7 @@ resource "azurerm_lb_rule" "ilb-rule" {
 
 # Availability set and virtual machine configuration <
 resource "azurerm_availability_set" "as" {
-  name                        = "${var.objectname_prefix}-as-0"
+  name                        = "${var.name_prefix}-as-0"
   managed                     = true
   location                    = "${azurerm_resource_group.rg.location}"
   resource_group_name         = "${azurerm_resource_group.rg.name}"
@@ -310,7 +310,7 @@ resource "azurerm_virtual_machine" "vms" {
   count                        = 2
   availability_set_id          = "${azurerm_availability_set.as.id}"
   location                     = "${azurerm_resource_group.rg.location}"
-  name                         = "${var.objectname_prefix}-vm-${count.index}"
+  name                         = "${var.name_prefix}-vm-${count.index}"
   network_interface_ids        = ["${element(azurerm_network_interface.network_interfaces.*.id, count.index)}"]
   primary_network_interface_id = "${element(azurerm_network_interface.network_interfaces.*.id, count.index)}"
   resource_group_name          = "${azurerm_resource_group.rg.name}"
@@ -330,7 +330,7 @@ resource "azurerm_virtual_machine" "vms" {
   }
 
   storage_os_disk {
-    name              = "${var.objectname_prefix}-vm-${count.index}-disk-0"
+    name              = "${var.name_prefix}-vm-${count.index}-disk-0"
     caching           = "ReadWrite"
     create_option     = "FromImage"
     managed_disk_type = "Premium_LRS"
@@ -338,9 +338,9 @@ resource "azurerm_virtual_machine" "vms" {
   }
 
   os_profile {
-    computer_name  = "${var.objectname_prefix}-vm-${count.index}"
-    admin_username = "${var.F5_USERNAME}"
-    admin_password = "${var.F5_PASSWORD}"
+    computer_name  = "${var.name_prefix}-vm-${count.index}"
+    admin_username = "${var.f5_username}"
+    admin_password = "${var.f5_password}"
   }
 
   os_profile_linux_config {
@@ -360,7 +360,7 @@ resource "azurerm_virtual_machine_extension" "vm_exts_bootstrap" {
 
   settings = <<SETTINGS
     {
-        "commandToExecute": "tmsh modify sys db provision.1nic value forced_enable;tmsh modify sys db provision.1nicautoconfig value disable;tmsh create ltm virtual _cloud_lb_probe_listener_ destination ${element(azurerm_network_interface.network_interfaces.*.ip_configuration.0.private_ip_address, count.index)}:694 source 168.63.129.16/32 ip-protocol tcp;echo tmsh modify ltm virtual _cloud_lb_probe_listener_ enabled>>/config/failover/active;echo tmsh modify ltm virtual _cloud_lb_probe_listener_ disabled>>/config/failover/standby;bigstart restart"
+        "commandToExecute": "SOAPLicenseClient --basekey ${element(var.f5_license_keys, count.index)} && bigstart restart mcpd && sleep 60 && tmsh modify sys db configsync.allowmanagement value enable && tmsh modify sys db provision.1nic value forced_enable && tmsh modify sys global-settings hostname ${element(azurerm_virtual_machine.vms.*.name, count.index)}.local && tmsh mv cm device bigip1 ${element(azurerm_virtual_machine.vms.*.name, count.index)} && echo tmsh modify ltm virtual _cloud_lb_probe_listener_ enabled>>/config/failover/active;echo tmsh modify ltm virtual _cloud_lb_probe_listener_ disabled>>/config/failover/standby;tmsh -q create ltm virtual _cloud_lb_probe_listener_ destination ${element(azurerm_network_interface.network_interfaces.*.ip_configuration.0.private_ip_address, count.index)}:694 source 168.63.129.16/32 ip-protocol tcp"
     }
   SETTINGS
 }
