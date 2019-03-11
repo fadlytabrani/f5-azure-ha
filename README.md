@@ -11,7 +11,9 @@
  8. Deployed in **Active/Standby or Active/Active scalable up to 127 devices** based on [traffic groups](https://support.f5.com/csp/article/K41291441).
  9. Same design principles apply in a **standalone, 1-nic, 2-nic, 3-nic, n-nic** deployment.
  
-The following manual deployment guides are published, and more is being planned. Get started with a progressive build:
+The following manual deployment guides are published, and more is being planned. 
+
+Get started with a progressive build:
  - [x] [Standalone Device 1 NIC](https://github.com/fadlytabrani/f5-azure-ha-fo/wiki/Standalone-Device-1-NIC)
 - [x] [Active Standby HA FO 1 NIC](https://github.com/fadlytabrani/f5-azure-ha-fo/wiki/Active-Standby-HA-FO-1-NIC)
 - [x] [Active Active HA FO 1 NIC](https://github.com/fadlytabrani/f5-azure-ha-fo/wiki/Active-Active-HA-FO-1-NIC)
