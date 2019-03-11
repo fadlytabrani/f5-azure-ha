@@ -14,7 +14,7 @@
 Get started with a [Standalone Device 1 NIC](https://github.com/fadlytabrani/f5-azure-ha-fo/wiki/Active-Standby-HA-FO-1-NIC).
 
 ### Design 1: Native LB-attached Virtual Servers
-![enter image description here](https://github.com/fadlytabrani/f5-azure-ha-fo/wiki/Standalone-Device-1-NIC)
+![Native LB-attached Virtual Servers](https://github.com/fadlytabrani/f5-azure-ha-fo/wiki/Standalone-Device-1-NIC)
 
 ### Design 2: Routed Virtual Servers & SNATs
-![enter image description here](https://github.com/fadlytabrani/f5-azure-ha-fo/raw/master/architecture-diagrams/f5-azure-ha-fo-routed-vs.png)
+![Routed Virtual Servers & SNATs](https://github.com/fadlytabrani/f5-azure-ha-fo/raw/master/architecture-diagrams/f5-azure-ha-fo-routed-vs.png)
