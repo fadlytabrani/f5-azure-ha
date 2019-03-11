@@ -8,7 +8,7 @@
  5. One IP in the fabric for each interface, **no secondary IP** needed.
  6. **No single virtual server** listening on a range, multiple virtual servers can be created.
  7. Supports **manual configuration** from the Azure marketplace, example Terraform templates provided. 
- 8. Deployed in **Active/Standby or Active/Active scalable up to 127 devices** based on [traffic groups](https://support.f5.com/csp/article/K41291441)..
+ 8. Deployed in **Active/Standby or Active/Active scalable up to 127 devices** based on [traffic groups](https://support.f5.com/csp/article/K41291441).
  9. Same design principles apply in a **standalone, 1-nic, 2-nic, 3-nic, n-nic** deployment.
  
 Get started with a [Standalone Device 1 NIC](https://github.com/fadlytabrani/f5-azure-ha-fo/wiki/Standalone-Device-1-NIC).
