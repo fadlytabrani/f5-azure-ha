@@ -17,9 +17,8 @@ Get started with a progressive build:
  - [x] [Standalone Device 1 NIC](https://github.com/fadlytabrani/f5-azure-ha-fo/wiki/Standalone-Device-1-NIC)
 - [x] [Active Standby HA FO 1 NIC](https://github.com/fadlytabrani/f5-azure-ha-fo/wiki/Active-Standby-HA-FO-1-NIC)
 - [x] [Active Active HA FO 1 NIC](https://github.com/fadlytabrani/f5-azure-ha-fo/wiki/Active-Active-HA-FO-1-NIC)
-- [ ] Active Standby/Active HA FO MIRROR 2 NIC
 - [ ] Active Standby/Active HA FO MIRROR N NIC 
-- [ ] Routed/Floating  Virtual Servers & SNAT pools
+- [ ] Routed/Floating Virtual Servers & SNAT pools
 - [ ] F5 BIG-IP DNS Integration
 
 ### Design 1: Native LB-attached Virtual Servers
